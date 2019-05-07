@@ -43,8 +43,6 @@ namespace ConfigurationEnhanced
       }
     }
 
-    private object _ioLock = new object();
-
     public void Reload()
     {
       if (!Directory.Exists(Paths.ConfigPath)) Directory.CreateDirectory(Paths.ConfigPath);
