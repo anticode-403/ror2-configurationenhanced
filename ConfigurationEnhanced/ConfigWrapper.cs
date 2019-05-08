@@ -27,7 +27,7 @@ namespace ConfigurationEnhanced
     /// <returns>The value of this configuration setting</returns>
     public T Read()
     {
-      ConfigFile.Reload();
+      ConfigFile.Load();
       return ConfigFile.Cache[Definition].ToObject<T>();
     }
 

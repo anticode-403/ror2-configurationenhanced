@@ -310,6 +310,7 @@
   <ItemGroup>
     <Compile Include="ConfigDef.cs" />
     <Compile Include="ConfigFile.cs" />
+    <Compile Include="Config.cs" />
     <Compile Include="ConfigWrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

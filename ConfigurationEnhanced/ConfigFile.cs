@@ -17,8 +17,6 @@ namespace ConfigurationEnhanced
   {
     private static readonly Regex sanitizeKeyRegex = new Regex(@"[^a-z0-9\-\.]+", RegexOptions.IgnoreCase);
 
-    internal static ConfigFile CoreConfig { get; } = new ConfigFile(Paths.BepInExConfigPath, true);
-
     protected internal Dictionary<ConfigDef, JToken> Cache => new Dictionary<ConfigDef, JToken>();
 
     public IReadOnlyCollection<ConfigDef> ConfigDefs => Cache.Keys.ToList().AsReadOnly();
@@ -30,12 +28,17 @@ namespace ConfigurationEnhanced
 
     public string ConfigFilePath { get; }
     
-    public ConfigFile(string configPath, bool saveOnInit)
+    /// <summary>
+    /// Creating this object makes a ConfigFile you can use anywhere in your mod. To make a setting, do ConfigFile.Wrap();
+    /// </summary>
+    /// <param name="configPath">The name of your file, without a file extension</param>
+    /// <param name="saveOnInit"></param>
+    public ConfigFile(string fileName, bool saveOnInit)
     {
-      ConfigFilePath = configPath;
+      ConfigFilePath = Utility.CombinePaths(Paths.ConfigPath, fileName + ".json");
       if (File.Exists(ConfigFilePath))
       {
-        Reload();
+        Load();
       }
       else if (saveOnInit)
       {
@@ -43,9 +46,11 @@ namespace ConfigurationEnhanced
       }
     }
 
-    public void Reload()
+    /// <summary>
+    /// Reloads config file from disk.
+    /// </summary>
+    public void Load()
     {
-      if (!Directory.Exists(Paths.ConfigPath)) Directory.CreateDirectory(Paths.ConfigPath);
       JObject config = JObject.Parse(File.ReadAllText(Paths.ConfigPath));
       foreach (ConfigDef configDef in Cache.Keys)
       {
@@ -57,13 +62,17 @@ namespace ConfigurationEnhanced
         JToken result = token.SelectToken(configDef.Key);
         Cache[configDef] = result;
       }
+      ConfigReloaded.Invoke(this, null);
     }
 
+    /// <summary>
+    /// Saves config file to disk. This will call reload.
+    /// </summary>
     public void Save()
     {
       if (!Directory.Exists(Paths.ConfigPath)) Directory.CreateDirectory(Paths.ConfigPath);
       JsonSerializer jsonSerializer = JsonSerializer.Create();
-      using (StreamWriter sw = new StreamWriter(Paths.ConfigPath))
+      using (StreamWriter sw = new StreamWriter(File.Create(ConfigFilePath)))
       using (JsonWriter writer = new JsonTextWriter(sw))
       {
         dynamic fileData;
@@ -96,12 +105,22 @@ namespace ConfigurationEnhanced
     {
       if (!Cache.ContainsKey(configDef))
       {
-        Cache.Add(configDef, null);
+        Cache.Add(configDef, JToken.FromObject(defaultValue));
+        Save();
       }
       return new ConfigWrapper<T>(this, configDef);
     }
 
-    public ConfigWrapper<T> Wrap<T>(string[] section, string key, T defaultValue = default(T))
-      => Wrap<T>(new ConfigDef(section, key));
+    /// <summary>
+    /// Create a wrap for ConfigurationEnhanced to create a setting out of.
+    /// </summary>
+    /// <typeparam name="T">Type of the config value.</typeparam>
+    /// <param name="section">An array of sections to drill through. foo.bar.baz: value would be ["foo", "bar"]</param>
+    /// <param name="key">Key of the value. This key should be unique to this section.</param>
+    /// <param name="description">Description of your setting. This displays in the in-game settings menu.</param>
+    /// <param name="defaultValue">The default value of this setting if none is set.</param>
+    /// <returns></returns>
+    public ConfigWrapper<T> Wrap<T>(string[] section, string key, string description, T defaultValue = default(T))
+      => Wrap<T>(new ConfigDef(section, key, description), defaultValue);
   }
 }

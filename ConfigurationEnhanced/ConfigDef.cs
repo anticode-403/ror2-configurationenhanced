@@ -12,11 +12,14 @@ namespace ConfigurationEnhanced
     public string[] Section { get; }
 
     public string Key { get; }
+
+    public string Description { get;  }
     
-    public ConfigDef(string[] section, string key)
+    public ConfigDef(string[] section, string key, string description)
     {
       Key = key;
       Section = section;
+      Description = description;
     }
 
     public override bool Equals(object obj)
