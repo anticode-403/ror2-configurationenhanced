@@ -111,6 +111,16 @@ namespace ConfigurationEnhanced
       return new ConfigWrapper<T>(this, configDef);
     }
 
+    public ConfigWrapper<T> Wrap<T>(ConfigDef configDef, List<T> defaultValue = default(List<T>))
+    {
+      if (!Cache.ContainsKey(configDef))
+      {
+        Cache.Add(configDef, JToken.FromObject(defaultValue));
+        Save();
+      }
+      return new ConfigWrapper<T>(this, configDef);
+    }
+
     /// <summary>
     /// Create a wrap for ConfigurationEnhanced to create a setting out of.
     /// </summary>
@@ -120,7 +130,19 @@ namespace ConfigurationEnhanced
     /// <param name="description">Description of your setting. This displays in the in-game settings menu.</param>
     /// <param name="defaultValue">The default value of this setting if none is set.</param>
     /// <returns></returns>
-    public ConfigWrapper<T> Wrap<T>(string[] section, string key, string description, T defaultValue = default(T))
-      => Wrap<T>(new ConfigDef(section, key, description), defaultValue);
+    public ConfigWrapper<T> Wrap<T>(string[] section, string key, string description, T defaultValue = default)
+      => Wrap(new ConfigDef(section, key, description), defaultValue);
+
+    /// <summary>
+    /// Create a wrap for ConfigurationEnhanced to create an array of objects out of.
+    /// </summary>
+    /// <typeparam name="T">Type of the List</typeparam>
+    /// <param name="section">An array of sections to drill through. foo.bar.baz: value would be ["foo", "bar"]</param>
+    /// <param name="key">Key of the value. This key should be unique to this section.</param>
+    /// <param name="description">Description of your setting. This displays in the in-game settings menu.</param>
+    /// <param name="defaultValue">The default value of this setting if none is set.</param>
+    /// <returns></returns>
+    public ConfigWrapper<T> ListWrap<T>(string[] section, string key, string description, List<T> defaultValue = default)
+      => Wrap(new ConfigDef(section, key, description, true), defaultValue);
   }
 }

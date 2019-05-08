@@ -13,13 +13,16 @@ namespace ConfigurationEnhanced
 
     public string Key { get; }
 
-    public string Description { get;  }
+    public string Description { get; }
+
+    public bool ListValue { get; }
     
-    public ConfigDef(string[] section, string key, string description)
+    public ConfigDef(string[] section, string key, string description, bool list = false)
     {
       Key = key;
       Section = section;
       Description = description;
+      ListValue = list;
     }
 
     public override bool Equals(object obj)
