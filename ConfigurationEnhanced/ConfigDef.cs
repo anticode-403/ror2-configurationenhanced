@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using System.Text.RegularExpressions;
 
 namespace ConfigurationEnhanced
 {
@@ -16,10 +11,24 @@ namespace ConfigurationEnhanced
     public string Description { get; }
 
     public bool ListValue { get; }
-    
+
+
+    [System.Serializable]
+    public class InvalidKeyException : System.Exception
+    {
+      public InvalidKeyException() { }
+      public InvalidKeyException(string message) : base(message) { }
+      public InvalidKeyException(string message, System.Exception inner) : base(message, inner) { }
+      protected InvalidKeyException(
+      System.Runtime.Serialization.SerializationInfo info,
+      System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+
     public ConfigDef(string[] section, string key, string description, bool list = false)
     {
-      Key = key;
+      if (!ConfigFile.sanitizeKeyRegex.IsMatch(key))
+        throw new InvalidKeyException($"The key '{key}' is not valid. Please enter a valid key.");
+      Key = Regex.Escape(key);
       Section = section;
       Description = description;
       ListValue = list;

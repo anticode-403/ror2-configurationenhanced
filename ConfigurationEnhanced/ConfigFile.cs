@@ -15,7 +15,7 @@ namespace ConfigurationEnhanced
   /// </summary>
   public class ConfigFile
   {
-    private static readonly Regex sanitizeKeyRegex = new Regex(@"[^a-z0-9\-\.]+", RegexOptions.IgnoreCase);
+    protected internal static readonly Regex sanitizeKeyRegex = new Regex(@"[^.']*", RegexOptions.IgnoreCase);
 
     protected internal Dictionary<ConfigDef, JToken> Cache => new Dictionary<ConfigDef, JToken>();
 
