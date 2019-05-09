@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
-
-namespace ConfigurationEnhanced
+﻿namespace ConfigurationEnhanced
 {
   public class ConfigDef
   {
@@ -27,7 +20,7 @@ namespace ConfigurationEnhanced
 
     public override bool Equals(object obj)
     {
-      if (ReferenceEquals(null, obj)) return false;
+      if (obj is null) return false;
       if (ReferenceEquals(this, obj)) return true;
       if (obj.GetType() != GetType()) return false;
       if (!(obj is ConfigDef other))  return false;
