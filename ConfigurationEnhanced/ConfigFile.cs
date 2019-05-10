@@ -101,7 +101,7 @@ namespace ConfigurationEnhanced
       }
     }
 
-    public ConfigWrapper<T> Wrap<T>(ConfigDef configDef, T defaultValue = default(T))
+    public ConfigWrapper<T> Wrap<T>(ConfigDef configDef, T defaultValue = default)
     {
       if (!Cache.ContainsKey(configDef))
       {
@@ -111,7 +111,7 @@ namespace ConfigurationEnhanced
       return new ConfigWrapper<T>(this, configDef);
     }
 
-    public ConfigWrapper<T> Wrap<T>(ConfigDef configDef, List<T> defaultValue = default(List<T>))
+    public ConfigWrapper<T> Wrap<T>(ConfigDef configDef, List<T> defaultValue = default)
     {
       if (!Cache.ContainsKey(configDef))
       {
