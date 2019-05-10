@@ -4,8 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Dynamic;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using BepInEx;
 
 namespace ConfigurationEnhanced
@@ -17,7 +15,7 @@ namespace ConfigurationEnhanced
   {
     protected internal static readonly Regex sanitizeKeyRegex = new Regex(@"[^.']*", RegexOptions.IgnoreCase);
 
-    protected internal Dictionary<ConfigDef, JToken> Cache => new Dictionary<ConfigDef, JToken>();
+    protected internal Dictionary<ConfigDef, string> Cache => new Dictionary<ConfigDef, string>();
 
     public IReadOnlyCollection<ConfigDef> ConfigDefs => Cache.Keys.ToList().AsReadOnly();
 
@@ -51,18 +49,35 @@ namespace ConfigurationEnhanced
     /// </summary>
     public void Load()
     {
-      JObject config = JObject.Parse(File.ReadAllText(Paths.ConfigPath));
-      foreach (ConfigDef configDef in Cache.Keys)
+      if (!Directory.Exists(Paths.ConfigPath))
+        Directory.CreateDirectory(Paths.ConfigPath);
+      string line = "";
+      foreach (string rawLine in File.ReadAllLines(ConfigFilePath))
       {
-        JToken token = config;
-        foreach (string section in configDef.Section)
-        {
-          token = token[section];
-        }
-        JToken result = token.SelectToken(configDef.Key);
-        Cache[configDef] = result;
+        line += rawLine.Trim();
       }
-      ConfigReloaded.Invoke(this, null);
+      Dictionary<string, string> dict = ConfigParser.FromJSON<Dictionary<string, string>>(line);
+      foreach (string key in dict.Keys)
+      {
+        string[] splitKey = key.Split('.');
+        string newKey = splitKey.Last();
+        string section = "";
+        bool isFirst = true;
+        foreach (string subKey in splitKey)
+        {
+          if (isFirst)
+          {
+            isFirst = false;
+            section += subKey;
+          }
+          else
+          {
+            section += $".{subKey}";
+          }
+        }
+        ConfigDef configDef = new ConfigDef(section, newKey);
+        Cache[configDef] = dict[key];
+      }
     }
 
     /// <summary>
@@ -70,34 +85,15 @@ namespace ConfigurationEnhanced
     /// </summary>
     public void Save()
     {
-      if (!Directory.Exists(Paths.ConfigPath)) Directory.CreateDirectory(Paths.ConfigPath);
-      JsonSerializer jsonSerializer = JsonSerializer.Create();
-      using (StreamWriter sw = new StreamWriter(File.Create(ConfigFilePath)))
-      using (JsonWriter writer = new JsonTextWriter(sw))
+      if (!Directory.Exists(Paths.ConfigPath))
+        Directory.CreateDirectory(Paths.ConfigPath);
+      Dictionary<string, string> dict = new Dictionary<string, string>();
+      foreach (ConfigDef configDef in Cache.Keys)
+        dict.Add($"{configDef.Section}.{configDef.Key}", Cache[configDef]);
+      ConfigWriter.ToJSON(dict);
+      using (StreamWriter writer = new StreamWriter(File.Create(ConfigFilePath), System.Text.Encoding.UTF8))
       {
-        dynamic fileData;
-        fileData = new ExpandoObject();
-        foreach (ConfigDef configDef in Cache.Keys)
-        {
-          fileData[configDef.Section[0]] = ModifySetting(fileData[configDef.Section[0]], configDef.Section.Skip(1).ToArray(), Cache[configDef]);
-        }
-        jsonSerializer.Serialize(writer, fileData);
-      }
-    }
-
-    private dynamic ModifySetting(dynamic section, string[] path, JToken value)
-    {
-      if (path.Length == 1)
-      {
-        dynamic new_section = section;
-        new_section[path[0]] = value;
-        return new_section;
-      }
-      else
-      {
-        dynamic new_section = section;
-        new_section[path[0]] = ModifySetting(new_section, path.Skip(1).ToArray(), value);
-        return new_section;
+        writer.WriteLine(dict);
       }
     }
 
@@ -105,7 +101,7 @@ namespace ConfigurationEnhanced
     {
       if (!Cache.ContainsKey(configDef))
       {
-        Cache.Add(configDef, JToken.FromObject(defaultValue));
+        Cache.Add(configDef, ConfigWriter.ToJSON(defaultValue));
         Save();
       }
       return new ConfigWrapper<T>(this, configDef);
@@ -115,7 +111,7 @@ namespace ConfigurationEnhanced
     {
       if (!Cache.ContainsKey(configDef))
       {
-        Cache.Add(configDef, JToken.FromObject(defaultValue));
+        Cache.Add(configDef, ConfigWriter.ToJSON(defaultValue));
         Save();
       }
       return new ConfigWrapper<T>(this, configDef);
@@ -130,19 +126,7 @@ namespace ConfigurationEnhanced
     /// <param name="description">Description of your setting. This displays in the in-game settings menu.</param>
     /// <param name="defaultValue">The default value of this setting if none is set.</param>
     /// <returns></returns>
-    public ConfigWrapper<T> Wrap<T>(string[] section, string key, string description, T defaultValue = default)
+    public ConfigWrapper<T> Wrap<T>(string section, string key, string description, T defaultValue = default)
       => Wrap(new ConfigDef(section, key, description), defaultValue);
-
-    /// <summary>
-    /// Create a wrap for ConfigurationEnhanced to create an array of objects out of.
-    /// </summary>
-    /// <typeparam name="T">Type of the List</typeparam>
-    /// <param name="section">An array of sections to drill through. foo.bar.baz: value would be ["foo", "bar"]</param>
-    /// <param name="key">Key of the value. This key should be unique to this section.</param>
-    /// <param name="description">Description of your setting. This displays in the in-game settings menu.</param>
-    /// <param name="defaultValue">The default value of this setting if none is set.</param>
-    /// <returns></returns>
-    public ConfigWrapper<T> ListWrap<T>(string[] section, string key, string description, List<T> defaultValue = default)
-      => Wrap(new ConfigDef(section, key, description, true), defaultValue);
   }
 }

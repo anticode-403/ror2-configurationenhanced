@@ -1,5 +1,4 @@
 ﻿using System;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -30,38 +29,14 @@ namespace ConfigurationEnhanced
     public T Read()
     {
       ConfigFile.Load();
-      return ConfigFile.Cache[Definition].ToObject<T>();
-    }
-
-    /// <summary>
-    /// Your config wrap as a List type. If this setting is not meant to be a List, it will create a list with a single entry.
-    /// </summary>
-    /// <returns>A List of objects of type T</returns>
-    public List<T> ListRead()
-    {
-      JToken value = ConfigFile.Cache[Definition];
-      if (Definition.ListValue)
-      {
-        IList<JToken> results = value.Children().ToList();
-        List<T> finalResult = new List<T>();
-        foreach (JToken result in results)
-        {
-          T listItem = result.ToObject<T>();
-          finalResult.Add(listItem);
-        }
-        return finalResult;
-      }
-      else
-      {
-        return new List<T> { value.ToObject<T>() };
-      }
+      return ConfigParser.FromJSON<T>(ConfigFile.Cache[Definition]);
     }
     /// <summary>
     /// Set the value. Using this is not recommended, unless this value is invalid or has been set by the user.
     /// </summary>
     public void Write(T value)
     {
-      ConfigFile.Cache[Definition] = JToken.FromObject(value);
+      ConfigFile.Cache[Definition] = ConfigWriter.ToJSON(value);
       ConfigFile.Save();
       SettingsChanged?.Invoke(this, EventArgs.Empty);
     }

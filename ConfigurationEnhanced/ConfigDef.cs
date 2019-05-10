@@ -4,14 +4,11 @@ namespace ConfigurationEnhanced
 {
   public class ConfigDef
   {
-    public string[] Section { get; }
+    public string Section { get; }
 
     public string Key { get; }
 
     public string Description { get; }
-
-    public bool ListValue { get; }
-
 
     [System.Serializable]
     public class InvalidKeyException : System.Exception
@@ -24,19 +21,18 @@ namespace ConfigurationEnhanced
       System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 
-    public ConfigDef(string[] section, string key, string description, bool list = false)
+    public ConfigDef(string section, string key, string description = "")
     {
       if (!ConfigFile.sanitizeKeyRegex.IsMatch(key))
         throw new InvalidKeyException($"The key '{key}' is not valid. Please enter a valid key.");
       Key = Regex.Escape(key);
       Section = section;
       Description = description;
-      ListValue = list;
     }
 
     public override bool Equals(object obj)
     {
-      if (ReferenceEquals(null, obj)) return false;
+      if (obj is null) return false;
       if (ReferenceEquals(this, obj)) return true;
       if (obj.GetType() != GetType()) return false;
       if (!(obj is ConfigDef other))  return false;
