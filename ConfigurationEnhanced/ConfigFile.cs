@@ -90,7 +90,11 @@ namespace ConfigurationEnhanced
       Dictionary<string, Dictionary<string, string>> dict = new Dictionary<string, Dictionary<string, string>>();
       foreach (ConfigDef configDef in Cache.Keys)
       {
-        dict[configDef.Section] = new Dictionary<string, string>() { [configDef.Key] = Cache[configDef] };
+        if (dict[configDef.Section] == null)
+        {
+          dict[configDef.Section] = new Dictionary<string, string>();
+        }
+        dict[configDef.Section].Add(configDef.Key, Cache[configDef]);
       }
       string json = ConfigWriter.ToJSON(dict);
       using (StreamWriter writer = new StreamWriter(File.Create(ConfigFilePath), System.Text.Encoding.UTF8))
