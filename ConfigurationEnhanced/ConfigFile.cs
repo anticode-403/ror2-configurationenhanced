@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using System.Dynamic;
+using System.IO;
 using BepInEx;
 
 namespace ConfigurationEnhanced
@@ -78,6 +77,7 @@ namespace ConfigurationEnhanced
         ConfigDef configDef = new ConfigDef(section, newKey);
         Cache[configDef] = dict[key];
       }
+      ConfigReloaded.Invoke(this, null);
     }
 
     /// <summary>
@@ -87,13 +87,15 @@ namespace ConfigurationEnhanced
     {
       if (!Directory.Exists(Paths.ConfigPath))
         Directory.CreateDirectory(Paths.ConfigPath);
-      Dictionary<string, string> dict = new Dictionary<string, string>();
+      Dictionary<string, Dictionary<string, string>> dict = new Dictionary<string, Dictionary<string, string>>();
       foreach (ConfigDef configDef in Cache.Keys)
-        dict.Add($"{configDef.Section}.{configDef.Key}", Cache[configDef]);
-      ConfigWriter.ToJSON(dict);
+      {
+        dict[configDef.Section] = new Dictionary<string, string>() { [configDef.Key] = Cache[configDef] };
+      }
+      string json = ConfigWriter.ToJSON(dict);
       using (StreamWriter writer = new StreamWriter(File.Create(ConfigFilePath), System.Text.Encoding.UTF8))
       {
-        writer.WriteLine(dict);
+        writer.WriteLine(json);
       }
     }
 
