@@ -50,12 +50,8 @@ namespace ConfigurationEnhanced
     {
       if (!Directory.Exists(Paths.ConfigPath))
         Directory.CreateDirectory(Paths.ConfigPath);
-      string line = "";
-      foreach (string rawLine in File.ReadAllLines(ConfigFilePath))
-      {
-        line += rawLine.Trim();
-      }
-      Dictionary<string, string> dict = ConfigParser.FromJSON<Dictionary<string, string>>(line);
+      string line = File.ReadAllText(ConfigFilePath);
+      Dictionary<string, object> dict = ConfigParser.FromJSON<Dictionary<string, object>>(line);
       foreach (string key in dict.Keys)
       {
         string[] splitKey = key.Split('.');
@@ -75,9 +71,9 @@ namespace ConfigurationEnhanced
           }
         }
         ConfigDef configDef = new ConfigDef(section, newKey);
-        Cache[configDef] = dict[key];
+        Cache[configDef] = ConfigWriter.ToJSON(dict[key]);
       }
-      ConfigReloaded.Invoke(this, null);
+      ConfigReloaded?.Invoke(this, null);
     }
 
     /// <summary>
@@ -90,30 +86,15 @@ namespace ConfigurationEnhanced
       Dictionary<string, Dictionary<string, string>> dict = new Dictionary<string, Dictionary<string, string>>();
       foreach (ConfigDef configDef in Cache.Keys)
       {
-        if (dict[configDef.Section] == null)
-        {
+        if (!dict.ContainsKey(configDef.Section))
           dict[configDef.Section] = new Dictionary<string, string>();
-        }
         dict[configDef.Section].Add(configDef.Key, Cache[configDef]);
       }
       string json = ConfigWriter.ToJSON(dict);
-      using (StreamWriter writer = new StreamWriter(File.Create(ConfigFilePath), System.Text.Encoding.UTF8))
-      {
-        writer.WriteLine(json);
-      }
+      File.WriteAllText(ConfigFilePath, json);
     }
 
     public ConfigWrapper<T> Wrap<T>(ConfigDef configDef, T defaultValue = default)
-    {
-      if (!Cache.ContainsKey(configDef))
-      {
-        Cache.Add(configDef, ConfigWriter.ToJSON(defaultValue));
-        Save();
-      }
-      return new ConfigWrapper<T>(this, configDef);
-    }
-
-    public ConfigWrapper<T> Wrap<T>(ConfigDef configDef, List<T> defaultValue = default)
     {
       if (!Cache.ContainsKey(configDef))
       {
