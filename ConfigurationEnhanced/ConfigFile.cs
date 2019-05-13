@@ -71,7 +71,10 @@ namespace ConfigurationEnhanced
           }
         }
         ConfigDef configDef = new ConfigDef(section, newKey);
-        Cache[configDef] = ConfigWriter.ToJSON(dict[key]);
+        if (!Cache.ContainsKey(configDef))
+          Cache.Add(configDef, ConfigWriter.ToJSON(dict[key]));
+        else
+          Cache[configDef] = ConfigWriter.ToJSON(dict[key]);
       }
       ConfigReloaded?.Invoke(this, null);
     }
@@ -87,7 +90,7 @@ namespace ConfigurationEnhanced
       foreach (ConfigDef configDef in Cache.Keys)
       {
         if (!dict.ContainsKey(configDef.Section))
-          dict[configDef.Section] = new Dictionary<string, string>();
+          dict.Add(configDef.Section, new Dictionary<string, string>());
         dict[configDef.Section].Add(configDef.Key, Cache[configDef]);
       }
       string json = ConfigWriter.ToJSON(dict);
